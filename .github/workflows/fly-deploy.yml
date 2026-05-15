@@ -20,12 +20,12 @@ jobs:
 
       - name: Create app if not exists
         run: |
-          fly apps list | grep -q "^$APP_NAME " || fly apps create $APP_NAME
+          flyctl apps list | grep -q "^$APP_NAME " || flyctl apps create $APP_NAME
 
       - name: Create Postgres cluster if not exists
         run: |
-          fly postgres list | grep -q "$PG_NAME" || \
-          fly postgres create \
+          flyctl postgres list | grep -q "$PG_NAME" || \
+          flyctl postgres create \
             --name $PG_NAME \
             --initial-cluster-size 1 \
             --vm-size shared-cpu-1x \
@@ -34,27 +34,27 @@ jobs:
 
       - name: Attach Postgres to app
         run: |
-          fly postgres attach $PG_NAME \
+          flyctl postgres attach $PG_NAME \
             --app $APP_NAME \
             --database-name redmine \
             --database-user redmine || true
 
       - name: Set SECRET_KEY_BASE
         run: |
-          fly secrets list --app $APP_NAME | grep -q SECRET_KEY_BASE || \
-          fly secrets set SECRET_KEY_BASE=$(openssl rand -hex 64) --app $APP_NAME
+          flyctl secrets list --app $APP_NAME | grep -q SECRET_KEY_BASE || \
+          flyctl secrets set SECRET_KEY_BASE=$(openssl rand -hex 64) --app $APP_NAME
 
       - name: Create files volume if not exists
         run: |
-          fly volumes list --app $APP_NAME | grep -q redmine_files || \
-          fly volumes create redmine_files \
+          flyctl volumes list --app $APP_NAME | grep -q redmine_files || \
+          flyctl volumes create redmine_files \
             --app $APP_NAME \
             --size 5 \
             --region sin \
             --yes
 
       - name: Deploy
-        run: fly deploy --app $APP_NAME --remote-only
+        run: flyctl deploy --app $APP_NAME --remote-only
 
       - name: Show URL
         run: |
