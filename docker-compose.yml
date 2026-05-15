@@ -27,7 +27,7 @@ services:
       REDMINE_DB_DATABASE: redmine
       REDMINE_DB_USERNAME: redmine
       REDMINE_DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
-      REDMINE_SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE required}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE required}
     ports:
       - "${REDMINE_PORT:-3000}:3000"
     volumes:
