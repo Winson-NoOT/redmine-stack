@@ -1,0 +1,39 @@
+name: redmine-stack
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: redmine
+      POSTGRES_USER: redmine
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required (copy .env.example to .env)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redmine -d redmine"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redmine:
+    image: redmine:6.1
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      REDMINE_DB_POSTGRES: postgres
+      REDMINE_DB_DATABASE: redmine
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      REDMINE_SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE required}
+    ports:
+      - "${REDMINE_PORT:-3000}:3000"
+    volumes:
+      - ./plugins:/usr/src/redmine/plugins
+      - ./themes:/usr/src/redmine/themes
+      - ./files:/usr/src/redmine/files
+
+volumes:
+  pgdata:

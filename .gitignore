@@ -1,0 +1,8 @@
+.env
+pgdata/
+files/*
+!files/.gitkeep
+themes/*
+!themes/.gitkeep
+plugins/*
+!plugins/.gitkeep
