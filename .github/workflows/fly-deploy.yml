@@ -1,0 +1,63 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main, master, claude/setup-redmin-server-3jkBh]
+  workflow_dispatch:
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_IO_ACCESSTOKEN }}
+  APP_NAME: winson-noot-redmine
+  PG_NAME: winson-noot-redmine-db
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create app if not exists
+        run: |
+          flyctl apps list | grep -q "^$APP_NAME " || flyctl apps create $APP_NAME
+
+      - name: Create Postgres cluster if not exists
+        run: |
+          flyctl postgres list | grep -q "$PG_NAME" || \
+          flyctl postgres create \
+            --name $PG_NAME \
+            --initial-cluster-size 1 \
+            --vm-size shared-cpu-1x \
+            --volume-size 5 \
+            --region sin
+
+      - name: Attach Postgres to app
+        run: |
+          flyctl postgres attach $PG_NAME \
+            --app $APP_NAME \
+            --database-name redmine \
+            --database-user redmine || true
+
+      - name: Set SECRET_KEY_BASE
+        run: |
+          flyctl secrets list --app $APP_NAME | grep -q SECRET_KEY_BASE || \
+          flyctl secrets set SECRET_KEY_BASE=$(openssl rand -hex 64) --app $APP_NAME
+
+      - name: Create files volume if not exists
+        run: |
+          flyctl volumes list --app $APP_NAME | grep -q redmine_files || \
+          flyctl volumes create redmine_files \
+            --app $APP_NAME \
+            --size 5 \
+            --region sin \
+            --yes
+
+      - name: Deploy
+        run: flyctl deploy --app $APP_NAME --remote-only
+
+      - name: Show URL
+        run: |
+          echo ""
+          echo "Redmine is live at: https://$APP_NAME.fly.dev"
+          echo "First login: admin / admin (forced password change)"
